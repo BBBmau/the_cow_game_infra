@@ -1,26 +1,24 @@
 # the cow game cluster
-This repo is for managing of GCP infrastructure used by `playthecowgame.com`
+This repo is for managing the K8s Cluster used by `playthecowgame.com`
 
-It involves setting up a simple autopilot k8s cluster that utilizes [agones](https://github.com/googleforgames/agones/) for ease in managing game servers through the use of the agones helm chart
+It involves using minikube for setting up a k8s cluster in a VM (currently this website is hosted on my mac mini on my desk).
 
-Everything is provisioned through Terraform with the use of google, kubernetes, and helm provider.
+The architecture is relatively simple. We provision two deployments with one representing the MMO server itself that players use with the second deployment being used as a database for keeping track of
+player events as the server is running.
 
-We utilize a GCS backend for our terraform state management
+The service allows the communication between the redis server and game server itself to exist in order to allow data to be fetched when needed. (Such as wanting to display hay count)
 
-## Installing the Agones Helm Chart
+The NodePort service is what exposes the Node to the public, in this case our minikube node address is exposed for users to use.
 
-To reproduce the installation of agones upon the setup of the GKE cluster, we'll first want to
+The PVC (Persistent Volume Claim) is of course what's used by redis to store the user data.
 
-### Add the agones repo
-`helm repo add agones https://agones.dev/chart/stable`
+# How to setup
 
-once added we can proceed with the `helm.tf` configuration of the chart being added to our cluster. Once installed we can proceed with utilizing the CRDs for setting up game servers with the help of agones
+1. run `docker build -t mmo-server:local .` within the root of `the_cow_game` repo
+2. Run `terraform apply`
+2. run `minikube service the-cow-game-server` to run locally. (Redis setup soon)
 
-### Setting up agones server
-
-After setup we can utilize the cowgame docker image made from [`the_cow_game`](https://github.com/BBBmau/the_cow_game) repo to begin creating game servers, `GameServers` act as pods and `Fleets` act as deployments in the world of agones.
-
-# TODO
-- [ ] explanation of simple single server implementation for the cow game MMO
-- [ ] investigate how we can move away from autopilot GKE cluster (perhaps cheaper?)
-- [ ] investiate how we can have dynamic game servers that are made available as servers get filled up (this would be v2 where we allow users to pick the game server rather than joining one server - may or may not happen)
+## TODO:
+ -[] support Grafana to analyze user data
+ -[] add back PR support of creating testable changes
+ -[] replace GKE entirely, only add back to expand server count
