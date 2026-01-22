@@ -294,7 +294,7 @@ resource "kubernetes_ingress_v1" "gke_ingress" {
     rule {
       http {
         path {
-          path     = "/*"
+          path     = "/game"
           path_type = "ImplementationSpecific"
           backend {
             service {
@@ -324,22 +324,6 @@ resource "kubernetes_manifest" "managed_certificate" {
     spec = {
       domains = [
         "www.playthecowgame.com"
-      ]
-    }
-  }
-}
-
-resource "kubernetes_manifest" "managed_certificate_2" {
-  manifest = {
-    apiVersion = "networking.gke.io/v1beta1"
-    kind       = "ManagedCertificate"
-    metadata = {
-      name      = "playthecowgame-cert-2"
-      namespace = "default"
-    }
-    spec = {
-      domains = [
-        "playthecowgame.com"
       ]
     }
   }
