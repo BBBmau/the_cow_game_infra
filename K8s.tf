@@ -305,6 +305,42 @@ resource "kubernetes_ingress_v1" "gke_ingress" {
             }
           }
         }
+        path {
+          path     = "/health"
+          path_type = "ImplementationSpecific"
+          backend {
+            service {
+              name = kubernetes_service.headless_service.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+        path {
+          path     = "/test"
+          path_type = "ImplementationSpecific"
+          backend {
+            service {
+              name = kubernetes_service.headless_service.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+        path {
+          path     = "/"
+          path_type = "ImplementationSpecific"
+          backend {
+            service {
+              name = kubernetes_service.headless_service.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
       }
     }
   }
