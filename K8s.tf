@@ -293,9 +293,10 @@ resource "kubernetes_ingress_v1" "gke_ingress" {
   spec {
     rule {
       http {
+        # Prefix match so /game, /game/, and /game/* (e.g. /game/cow.js) all hit the backend
         path {
           path     = "/game"
-          path_type = "ImplementationSpecific"
+          path_type = "Prefix"
           backend {
             service {
               name = kubernetes_service.headless_service.metadata[0].name
