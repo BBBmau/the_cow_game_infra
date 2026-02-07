@@ -82,17 +82,32 @@ resource "kubernetes_deployment" "game_server" {
 
           env {
             name  = "POSTGRES_USER"
-            value = var.postgres_user
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.postgres_credentials.metadata[0].name
+                key  = "username"
+              }
+            }
           }
 
           env {
             name  = "POSTGRES_PASSWORD"
-            value = var.postgres_password
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.postgres_credentials.metadata[0].name
+                key  = "password"
+              }
+            }
           }
 
           env {
             name  = "POSTGRES_DB"
-            value = var.postgres_db
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.postgres_credentials.metadata[0].name
+                key  = "database"
+              }
+            }
           }
         }
       }
