@@ -21,3 +21,22 @@ variable "namespace" {
   default     = "default"
   description = "Kubernetes namespace for local cow game resources."
 }
+
+variable "postgres_user" {
+  type        = string
+  default     = "postgres"
+  description = "PostgreSQL user for the local database."
+}
+
+variable "postgres_password" {
+  type        = string
+  default     = "postgres"
+  sensitive   = true
+  description = "PostgreSQL password for local dev. Override via TF_VAR_postgres_password."
+}
+
+variable "postgres_db" {
+  type        = string
+  default     = "cowgame"
+  description = "PostgreSQL database name used by the game server."
+}

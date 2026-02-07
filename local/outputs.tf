@@ -3,6 +3,11 @@ output "redis_service" {
   description = "Redis service name (use as REDIS_HOST from game server)."
 }
 
+output "postgres_service" {
+  value       = kubernetes_service.postgres.metadata[0].name
+  description = "PostgreSQL service name (use as POSTGRES_HOST from game server)."
+}
+
 output "game_server_service" {
   value       = kubernetes_service.game_server.metadata[0].name
   description = "Game server service name."

@@ -69,12 +69,37 @@ resource "kubernetes_deployment" "game_server" {
             name  = "REDIS_PORT"
             value = "6379"
           }
+
+          env {
+            name  = "POSTGRES_HOST"
+            value = kubernetes_service.postgres.metadata[0].name
+          }
+
+          env {
+            name  = "POSTGRES_PORT"
+            value = "5432"
+          }
+
+          env {
+            name  = "POSTGRES_USER"
+            value = var.postgres_user
+          }
+
+          env {
+            name  = "POSTGRES_PASSWORD"
+            value = var.postgres_password
+          }
+
+          env {
+            name  = "POSTGRES_DB"
+            value = var.postgres_db
+          }
         }
       }
     }
   }
 
-  depends_on = [kubernetes_service.redis]
+  depends_on = [kubernetes_service.redis, kubernetes_service.postgres]
 }
 
 resource "kubernetes_service" "game_server" {
