@@ -131,6 +131,15 @@ terraform apply -var='game_server_image=mmo-server:debug' -var='game_server_imag
 
 No GCP resources; use an Ingress controller in your local cluster to simulate production routing.
 
+## Static assets (CSS, JS) on the index page
+
+The cluster does **not** serve static files by itself. All requests that don’t start with `/game` (including `/`, `/style.css`, `/app.js`, `/static/*`, etc.) are sent to the **web server** pod. For styling and scripting to work you need:
+
+1. **Web app serves static files** – The web server (e.g. Express) must serve CSS/JS, e.g. `express.static('public')` or similar, so that requests to `/style.css` or `/assets/main.js` are answered by the app.
+2. **Image includes built assets** – The `mmo-web:local` image must contain the built frontend (CSS/JS) in the directory the server uses (e.g. `public/` or `dist/`). If the Dockerfile only copies `server.js` and not the built bundle, the browser will get 404 for `.css`/`.js`.
+
+If the index loads but has no style or scripts, check the browser Network tab for 404s and fix the web app’s static serving and/or the web Dockerfile in the `the_cow_game` repo; no change is required in this infra.
+
 ## Tear down
 
 ```bash

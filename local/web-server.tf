@@ -34,8 +34,8 @@ resource "kubernetes_deployment" "web_server" {
       spec {
         container {
           image             = var.web_server_image
-          name  = "thecowgameweb"
-          image_pull_policy = "Always"
+          name              = "thecowgameweb"
+          image_pull_policy = var.web_server_image_pull_policy
 
           port {
             container_port = 6060
