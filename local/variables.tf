@@ -4,6 +4,18 @@ variable "kubeconfig_path" {
   description = "Path to kubeconfig. Leave empty to use default (KUBECONFIG env or ~/.kube/config)."
 }
 
+variable "web_server_image" {
+  type        = string
+  default     = "mmo-web:local"
+  description = "Docker image for the cow game web server. Use a local build (e.g. mmo-web:local) or any tag you push to your cluster."
+}
+
+variable "web_server_image_pull_policy" {
+  type        = string
+  default     = "IfNotPresent"
+  description = "Image pull policy for the web server. Use IfNotPresent or Never for local images, Always when pulling from a registry."
+}
+
 variable "game_server_image" {
   type        = string
   default     = "mmo-server:local"
@@ -39,4 +51,16 @@ variable "postgres_db" {
   type        = string
   default     = "cowgame"
   description = "PostgreSQL database name used by the game server."
+}
+
+variable "ingress_host" {
+  type        = string
+  default     = "cow.local"
+  description = "Host for local Ingress. Add this to /etc/hosts pointing at your cluster (e.g. minikube ip)."
+}
+
+variable "ingress_class_name" {
+  type        = string
+  default     = "nginx"
+  description = "IngressClass name. Use 'nginx' for ingress-nginx (minikube addons enable ingress)."
 }

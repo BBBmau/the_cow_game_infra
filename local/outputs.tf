@@ -22,3 +22,8 @@ output "access_hint" {
   value       = "Game server: kubectl port-forward svc/single-pod-service 6060:80 -n ${var.namespace} then open http://localhost:6060 (or use NodePort from game_server_node_port)"
   description = "How to reach the game server locally."
 }
+
+output "ingress_hint" {
+  value       = "Ingress: enable controller (e.g. minikube addons enable ingress), add '$(minikube ip 2>/dev/null || echo 127.0.0.1) ${var.ingress_host}' to /etc/hosts, then open http://${var.ingress_host} (/ -> web, /game -> game server)"
+  description = "How to use local Ingress for path-based routing."
+}

@@ -67,6 +67,43 @@ kubectl get nodes
 
    - **NodePort**: after `terraform apply`, run `terraform output game_server_node_port` and open `http://localhost:<port>` (Docker Desktop / kind with port mapping).
 
+4. **Optional – Ingress (path-based routing like GKE)**:
+
+   Enable an Ingress controller, then use one host with paths:
+
+   - **minikube**: `minikube addons enable ingress`
+   - **kind / Docker Desktop**: install [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/) (e.g. via Helm or manifest).
+
+   After `terraform apply`, add the Ingress host to `/etc/hosts`:
+
+   ```bash
+   # minikube
+   echo "$(minikube ip) cow.local" | sudo tee -a /etc/hosts
+
+   # kind (ingress-nginx with host ports): use 127.0.0.1
+   echo "127.0.0.1 cow.local" | sudo tee -a /etc/hosts
+   # kind (no host ports): use the control-plane container IP
+   # echo "$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' kind-control-plane) cow.local" | sudo tee -a /etc/hosts
+   ```
+
+   Then open **http://cow.local** (or the host from `ingress_host`). 
+
+   The port needs to be specified that is used when running `kubectl port-forward`, for example if we use 6060 we would need to provide it as `http:cow.local:6060/game`
+
+   - **http://cow.local/** → web server
+   - **http://cow.local/game** → game server
+
+   Override the host with `-var='ingress_host=myapp.local'` if needed.
+
+   **If you get 503 (Service Temporarily Unavailable):** the Ingress controller can't reach the backends. Check that the game and web pods are running and that the Services have endpoints:
+
+   ```bash
+   kubectl get pods -n default -l 'app in (cow-game,cow-web)'
+   kubectl get endpoints single-pod-service web-server -n default
+   ```
+
+   If endpoints are empty, fix the deployments (image pull, crash loops, etc.) and retry. Use **port 80** in the browser (e.g. http://cow.local), unless you explicitly exposed the Ingress controller on another port (e.g. NodePort 30600 → then http://cow.local:30600).
+
 ## Variables
 
 | Variable | Default | Description |
@@ -75,6 +112,8 @@ kubectl get nodes
 | `game_server_image_pull_policy` | `IfNotPresent` | Use `Never` for local-only images. |
 | `namespace` | `default` | Namespace for all resources. |
 | `kubeconfig_path` | `""` | Path to kubeconfig; empty = default. |
+| `ingress_host` | `cow.local` | Host for local Ingress; add to /etc/hosts. |
+| `ingress_class_name` | `nginx` | IngressClass (e.g. `nginx` for ingress-nginx). |
 
 Example with a custom image:
 
@@ -84,10 +123,13 @@ terraform apply -var='game_server_image=mmo-server:debug' -var='game_server_imag
 
 ## What this provisions
 
-- **Redis**: deployment and ClusterIP service with ephemeral storage (emptyDir), so it starts immediately without a PVC or StorageClass.
-- **Cow game server**: deployment and NodePort service (same shape as GKE `K8s.tf` but without GCP artifact registry or ingress).
+- **Redis**: deployment and ClusterIP service with ephemeral storage (emptyDir).
+- **PostgreSQL**: deployment and ClusterIP service (ephemeral emptyDir) for the game server.
+- **Cow game server**: deployment and NodePort service; connects to Redis and Postgres.
+- **Web server**: deployment and ClusterIP service (welcome, login, leaderboard, etc.).
+- **Ingress** (optional): path-based routing so **/** → web server and **/game** → game server, similar to GKE.
 
-No GCP resources, no GKE cluster, no ingress or TLS – only the app components so you can test and debug infra locally.
+No GCP resources; use an Ingress controller in your local cluster to simulate production routing.
 
 ## Tear down
 
