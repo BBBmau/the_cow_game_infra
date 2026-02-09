@@ -13,6 +13,11 @@ output "game_server_service" {
   description = "Game server service name."
 }
 
+output "api_server_service" {
+  value       = kubernetes_service.api_server.metadata[0].name
+  description = "API server service name (Go backend for /api)."
+}
+
 output "game_server_node_port" {
   value       = kubernetes_service.game_server.spec[0].port[0].node_port
   description = "NodePort for the game server. With minikube: minikube service single-pod-service --url. With Docker Desktop: localhost:<this_port>."
@@ -24,6 +29,6 @@ output "access_hint" {
 }
 
 output "ingress_hint" {
-  value       = "Ingress: enable controller (e.g. minikube addons enable ingress), add '$(minikube ip 2>/dev/null || echo 127.0.0.1) ${var.ingress_host}' to /etc/hosts, then open http://${var.ingress_host} (/ -> web, /game -> game server)"
+  value       = "Ingress: enable controller, add ingress_host to /etc/hosts, then http://${var.ingress_host} (/ -> web, /api -> Go API, /game -> game server)"
   description = "How to use local Ingress for path-based routing."
 }

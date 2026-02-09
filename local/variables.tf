@@ -64,3 +64,21 @@ variable "ingress_class_name" {
   default     = "nginx"
   description = "IngressClass name. Use 'nginx' for ingress-nginx (minikube addons enable ingress)."
 }
+
+variable "api_server_image" {
+  type        = string
+  default     = "cow-game-api:local"
+  description = "Docker image for the Go API server. Use a local build (e.g. cow-api:local) or any tag you push to your cluster."
+}
+
+variable "api_server_image_pull_policy" {
+  type        = string
+  default     = "IfNotPresent"
+  description = "Image pull policy for the API server. Use IfNotPresent or Never for local images."
+}
+
+variable "api_server_port" {
+  type        = number
+  default     = 8080
+  description = "Port the Go API server listens on inside the container."
+}

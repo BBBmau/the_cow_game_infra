@@ -91,6 +91,7 @@ kubectl get nodes
    The port needs to be specified that is used when running `kubectl port-forward`, for example if we use 6060 we would need to provide it as `http:cow.local:6060/game`
 
    - **http://cow.local/** → web server
+   - **http://cow.local/api** → Go API server
    - **http://cow.local/game** → game server
 
    Override the host with `-var='ingress_host=myapp.local'` if needed.
@@ -114,6 +115,9 @@ kubectl get nodes
 | `kubeconfig_path` | `""` | Path to kubeconfig; empty = default. |
 | `ingress_host` | `cow.local` | Host for local Ingress; add to /etc/hosts. |
 | `ingress_class_name` | `nginx` | IngressClass (e.g. `nginx` for ingress-nginx). |
+| `api_server_image` | `cow-api:local` | Docker image for the Go API server. |
+| `api_server_image_pull_policy` | `IfNotPresent` | Image pull policy for the API server. |
+| `api_server_port` | `8080` | Port the Go API server listens on in the container. |
 
 Example with a custom image:
 
@@ -127,13 +131,14 @@ terraform apply -var='game_server_image=mmo-server:debug' -var='game_server_imag
 - **PostgreSQL**: deployment and ClusterIP service (ephemeral emptyDir) for the game server.
 - **Cow game server**: deployment and NodePort service; connects to Redis and Postgres.
 - **Web server**: deployment and ClusterIP service (welcome, login, leaderboard, etc.).
-- **Ingress** (optional): path-based routing so **/** → web server and **/game** → game server, similar to GKE.
+- **API server** (Go): deployment and ClusterIP service for **/api**; connects to Redis and Postgres.
+- **Ingress** (optional): path-based routing: **/** → web, **/api** → Go API server, **/game** → game server, similar to GKE.
 
 No GCP resources; use an Ingress controller in your local cluster to simulate production routing.
 
 ## Static assets (CSS, JS) on the index page
 
-The cluster does **not** serve static files by itself. All requests that don’t start with `/game` (including `/`, `/style.css`, `/app.js`, `/static/*`, etc.) are sent to the **web server** pod. For styling and scripting to work you need:
+The cluster does **not** serve static files by itself. Requests to **/api** go to the **Go API server** pod. All other non-`/game` requests (e.g. `/`, `/style.css`, `/app.js`) go to the **web server** pod. For styling and scripting to work you need:
 
 1. **Web app serves static files** – The web server (e.g. Express) must serve CSS/JS, e.g. `express.static('public')` or similar, so that requests to `/style.css` or `/assets/main.js` are answered by the app.
 2. **Image includes built assets** – The `mmo-web:local` image must contain the built frontend (CSS/JS) in the directory the server uses (e.g. `public/` or `dist/`). If the Dockerfile only copies `server.js` and not the built bundle, the browser will get 404 for `.css`/`.js`.
