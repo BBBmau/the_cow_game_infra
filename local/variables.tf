@@ -82,3 +82,15 @@ variable "api_server_port" {
   default     = 8080
   description = "Port the Go API server listens on inside the container."
 }
+
+variable "sync_leaderboard_image" {
+  type        = string
+  default     = "mmo-db-sync:local"
+  description = "Docker image for the leaderboard sync CronJob (must include Node and scripts/sync-leaderboard-to-postgres.js)."
+}
+
+variable "sync_leaderboard_schedule" {
+  type        = string
+  default     = "*/1 * * * *"
+  description = "Cron schedule for Redis→Postgres leaderboard sync (default: every minute)."
+}

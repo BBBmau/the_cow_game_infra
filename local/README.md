@@ -118,6 +118,8 @@ kubectl get nodes
 | `api_server_image` | `cow-api:local` | Docker image for the Go API server. |
 | `api_server_image_pull_policy` | `IfNotPresent` | Image pull policy for the API server. |
 | `api_server_port` | `8080` | Port the Go API server listens on in the container. |
+| `sync_leaderboard_image` | `mmo-server:local` | Image for the leaderboard sync CronJob (Node + script). |
+| `sync_leaderboard_schedule` | `*/1 * * * *` | Cron schedule for Redis→Postgres sync (default: every minute). |
 
 Example with a custom image:
 
@@ -132,9 +134,66 @@ terraform apply -var='game_server_image=mmo-server:debug' -var='game_server_imag
 - **Cow game server**: deployment and NodePort service; connects to Redis and Postgres.
 - **Web server**: deployment and ClusterIP service (welcome, login, leaderboard, etc.).
 - **API server** (Go): deployment and ClusterIP service for **/api**; connects to Redis and Postgres.
+- **CronJob** `sync-leaderboard`: runs on a schedule (default every minute) to sync leaderboard data from Redis to Postgres; uses image with Node and `scripts/sync-leaderboard-to-postgres.js`, env from secret `db-secret` (DATABASE_URL) and Redis service.
 - **Ingress** (optional): path-based routing: **/** → web, **/api** → Go API server, **/game** → game server, similar to GKE.
 
 No GCP resources; use an Ingress controller in your local cluster to simulate production routing.
+
+## Debugging the sync CronJob
+
+To confirm the leaderboard sync CronJob is running and the script works:
+
+1. **See the CronJob and its schedule**
+   ```bash
+   kubectl get cronjob sync-leaderboard -n default
+   ```
+
+2. **See Jobs created by the CronJob** (one per run)
+   ```bash
+   kubectl get jobs -n default -l job-name  # or: kubectl get jobs -n default | grep sync-leaderboard
+   ```
+
+3. **List pods for the most recent job** (replace `<job-name>` with e.g. `sync-leaderboard-28345678`)
+   ```bash
+   kubectl get pods -n default -l job-name=sync-leaderboard-28345678
+   ```
+   Or list all pods from the CronJob’s jobs:
+   ```bash
+   kubectl get pods -n default --sort-by=.metadata.creationTimestamp | grep sync-leaderboard
+   ```
+
+4. **View logs** (use the pod name from step 3, or the latest job)
+   ```bash
+   kubectl logs -n default -l job-name=sync-leaderboard-28345678 --tail=200
+   ```
+   If the pod failed and was restarted, add `--previous` to see the previous attempt:
+   ```bash
+   kubectl logs -n default <pod-name> --previous
+   ```
+
+5. **Run the sync once manually** (don’t wait for the schedule)
+   ```bash
+   kubectl create job -n default sync-leaderboard-manual --from=cronjob/sync-leaderboard
+   kubectl logs -n default job/sync-leaderboard-manual -f
+   kubectl delete job -n default sync-leaderboard-manual   # optional cleanup
+   ```
+
+6. **Inspect a failed run**
+   ```bash
+   kubectl describe job -n default <job-name>
+   kubectl describe pod -n default <pod-name>
+   ```
+   Check **Events** for image pull errors, OOMKilled, or exit reason.
+
+7. **Shell into a one-off pod with the same env** (for ad‑hoc debugging)
+   ```bash
+   kubectl run -n default sync-debug --rm -it --restart=Never \
+     --image=<your-sync-image> \
+     --env="DATABASE_URL=$(kubectl get secret db-secret -n default -o jsonpath='{.data.url}' | base64 -d)" \
+     --env="REDIS_HOST=redis" \
+     -- node -e "console.log(process.env.DATABASE_URL ? 'DATABASE_URL set' : 'missing'); console.log(process.env.REDIS_HOST);"
+   ```
+   Or run your script: replace the `-- node -e "..."` with `-- node scripts/sync-leaderboard-to-postgres.js`.
 
 ## Static assets (CSS, JS) on the index page
 
